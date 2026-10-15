@@ -1,0 +1,21 @@
+{
+  "dataset_size": 5572,
+  "train_size": 4457,
+  "test_size": 1115,
+  "split": "80/20 stratified",
+  "accuracy": 0.9748878923766816,
+  "precision": 0.8954248366013072,
+  "recall": 0.9194630872483222,
+  "f1": 0.9072847682119205,
+  "confusion_matrix": [
+    [
+      950,
+      16
+    ],
+    [
+      12,
+      137
+    ]
+  ],
+  "limitations": "Older English SMS dataset; results do not guarantee detection of modern scams."
+}
