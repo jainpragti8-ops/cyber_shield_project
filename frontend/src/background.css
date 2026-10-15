@@ -1,0 +1,198 @@
+:root {
+  --bg: #080f20;
+  --panel: #101a30;
+  --panel2: #172440;
+  --line: #293955;
+  --muted: #9aa9c4;
+  --white: #f4f7ff;
+  --mint: #7ca7ff;
+  --blue: #92a9ff;
+}
+
+body {
+  background-color: #080f20;
+  background-image:
+    radial-gradient(ellipse at 14% 5%, rgb(36 91 190 / 20%), transparent 39%),
+    radial-gradient(ellipse at 87% 17%, rgb(91 63 164 / 13%), transparent 33%),
+    linear-gradient(145deg, #080f20 0%, #0d1830 48%, #0a1226 100%);
+  background-attachment: fixed;
+}
+
+.shell {
+  background: transparent;
+}
+
+.sidebar {
+  background: rgb(8 16 34 / 86%);
+  border-color: rgb(102 131 185 / 20%);
+  backdrop-filter: blur(18px);
+}
+
+.main {
+  background-image:
+    linear-gradient(rgb(113 147 214 / 2%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(113 147 214 / 2%) 1px, transparent 1px);
+  background-size: 38px 38px;
+}
+
+.topbar,
+.footer {
+  border-color: rgb(102 131 185 / 20%);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.account-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #dce7fb;
+  font-size: 10px;
+}
+
+.account-chip > span {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(124 167 255 / 35%);
+  border-radius: 50%;
+  color: #dbe8ff;
+  background: linear-gradient(140deg, #3d70c6, #5b55a7);
+  font: 600 10px Manrope, sans-serif;
+}
+
+.account-chip > b {
+  max-width: 120px;
+  overflow: hidden;
+  color: #b9c8e2;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signout-button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(102 131 185 / 24%);
+  border-radius: 5px;
+  color: #a6b9dc;
+  background: rgb(19 34 61 / 72%);
+  cursor: pointer;
+}
+
+.signout-button:hover {
+  color: #fff;
+  border-color: rgb(124 167 255 / 50%);
+  background: rgb(51 86 151 / 28%);
+}
+
+.stat-row,
+.scanner-card,
+.panel,
+.input-pane,
+.result-pane,
+.metric,
+.tip {
+  background-color: rgb(15 27 50 / 86%);
+  border-color: rgb(102 131 185 / 23%);
+  box-shadow: 0 12px 32px rgb(2 8 23 / 16%);
+}
+
+.scanner-card:hover {
+  border-color: rgb(124 167 255 / 60%);
+  box-shadow: 0 16px 38px rgb(21 60 139 / 18%);
+}
+
+.nav-item:hover,
+.nav-item.selected {
+  background: rgb(51 86 151 / 22%);
+  color: #f2f6ff;
+}
+
+.nav-item.selected {
+  box-shadow: inset 2px 0 #80a9ff;
+}
+
+.privacy,
+.method-panel {
+  background-color: rgb(19 34 61 / 88%);
+  border-color: rgb(102 131 185 / 24%);
+}
+
+.heading-stamp {
+  border-color: rgb(124 167 255 / 36%);
+  background-image:
+    repeating-linear-gradient(135deg, rgb(124 167 255 / 6%), rgb(124 167 255 / 6%) 1px, transparent 1px, transparent 7px),
+    linear-gradient(145deg, rgb(35 72 142 / 14%), rgb(79 53 137 / 9%));
+}
+
+.input-pane textarea,
+.drop-zone {
+  background-color: rgb(8 16 33 / 78%);
+  border-color: rgb(102 131 185 / 32%);
+}
+
+.input-pane textarea:focus {
+  border-color: #7ca7ff;
+}
+
+.run-button {
+  background: linear-gradient(100deg, #4b83ed, #6c75e6);
+  color: #fff;
+  box-shadow: 0 7px 20px rgb(55 94 201 / 24%);
+}
+
+.run-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.result-verdict,
+.matrix-row strong {
+  background-color: rgb(22 37 66 / 88%);
+  border-color: rgb(102 131 185 / 28%);
+}
+
+.score-track {
+  background: #263654;
+}
+
+.score-track span {
+  background: linear-gradient(90deg, #4d86f0, #9680ef);
+}
+
+.tip {
+  background-image: linear-gradient(145deg, rgb(22 40 73 / 62%), rgb(17 26 48 / 78%));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .main {
+    animation: background-arrive 650ms ease-out both;
+  }
+}
+
+@keyframes background-arrive {
+  from { opacity: .75; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 680px) {
+  .topbar-actions { gap: 7px; }
+  .account-chip { gap: 0; }
+  .account-chip > b { display: none; }
+  .account-chip > span { width: 23px; height: 23px; }
+  .signout-button { width: 27px; height: 27px; }
+}
+
+@media (max-width: 400px) {
+  .topbar-actions { gap: 5px; }
+  .backend-state { font-size: 0; gap: 4px; }
+  .backend-state .live-dot { width: 6px; height: 6px; }
+  .crumb { font-size: 7px; }
+}

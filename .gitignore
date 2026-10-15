@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+backend/cybershield.sqlite3
+backend/ml/data/*
+!backend/ml/data/.gitkeep
+backend/ml/models/*.joblib
+backend/ml/models/metrics.json
+frontend/node_modules/
+frontend/dist/
