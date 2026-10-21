@@ -1,18 +1,19 @@
 import { useState, type FormEvent } from 'react';
-import { ArrowRight, Check, LockKeyhole, Mail, Shield, UserRound } from 'lucide-react';
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, Shield, UserRound } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api';
 
 type User = { id:number; name:string; email:string };
 
-export default function AuthScreen({ onAuthenticated }:{ onAuthenticated:(user:User)=>void }) {
+export default function AuthScreen({ onAuthenticated, initialError }:{ onAuthenticated:(user:User)=>void; initialError?:string }) {
   const [mode, setMode] = useState<'login'|'signup'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError ?? '');
 
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,8 +60,8 @@ export default function AuthScreen({ onAuthenticated }:{ onAuthenticated:(user:U
           <form className="auth-form" onSubmit={submit}>
             {mode==='signup'&&<label className="auth-field"><span>Your name</span><div className="auth-input-wrap"><UserRound size={17}/><input autoComplete="name" value={name} onChange={event=>setName(event.target.value)} minLength={2} maxLength={80} placeholder="Name for your workspace" required/></div></label>}
             <label className="auth-field"><span>Email address</span><div className="auth-input-wrap"><Mail size={17}/><input type="email" autoComplete="email" value={email} onChange={event=>setEmail(event.target.value)} placeholder="you@example.com" maxLength={254} required/></div></label>
-            <label className="auth-field"><span>Password</span><div className="auth-input-wrap"><LockKeyhole size={17}/><input type="password" autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={event=>setPassword(event.target.value)} placeholder={mode==='login'?'Enter your password':'At least 10 characters'} minLength={mode==='signup'?10:1} maxLength={128} required/></div>{mode==='signup'&&<small>Use at least 10 characters.</small>}</label>
-            {mode==='signup'&&<label className="auth-field"><span>Confirm password</span><div className="auth-input-wrap"><Check size={17}/><input type="password" autoComplete="new-password" value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)} placeholder="Enter it once more" minLength={10} maxLength={128} required/></div></label>}
+            <label className="auth-field"><span>Password</span><div className="auth-input-wrap"><LockKeyhole size={17}/><input aria-label="Password" type={showPassword?'text':'password'} autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={event=>setPassword(event.target.value)} placeholder={mode==='login'?'Enter your password':'At least 10 characters'} minLength={mode==='signup'?10:1} maxLength={128} required/><button className="password-visibility" type="button" aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)}>{showPassword?<EyeOff size={16}/>:<Eye size={16}/>}</button></div>{mode==='signup'&&<small>Use at least 10 characters.</small>}</label>
+            {mode==='signup'&&<label className="auth-field"><span>Confirm password</span><div className="auth-input-wrap"><Check size={17}/><input aria-label="Confirm password" type={showPassword?'text':'password'} autoComplete="new-password" value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)} placeholder="Enter it once more" minLength={10} maxLength={128} required/></div></label>}
             {error&&<div className="auth-error" role="alert">{error}</div>}
             <button className="auth-submit" type="submit" disabled={busy}>{busy?'Securing your session…':mode==='login'?'Enter workspace':'Create local account'}<span><ArrowRight size={17}/></span></button>
           </form>
