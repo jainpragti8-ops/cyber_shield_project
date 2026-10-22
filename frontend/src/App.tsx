@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Activity, AlertTriangle, ArrowUpRight, Check, ChevronRight, CircleHelp, FileSearch, FileText, Gauge, History, Link2, LoaderCircle, LogOut, MessageSquareText, Search, Shield, ShieldAlert, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowUpRight, Check, ChevronRight, CircleHelp, FileSearch, FileText, Gauge, History, KeyRound, Link2, LoaderCircle, LogOut, MessageSquareText, Search, Shield, ShieldAlert, ShieldCheck, Trash2, Upload, UserCog } from 'lucide-react';
 import AuthScreen from './AuthScreen';
+import AccountModal, { type User } from './AccountModal';
 
 const API = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api';
 type ScanType = 'spam' | 'url' | 'file';
 type Result = { verdict: string; risk_score: number; method: string; indicators: string[]; recommendations: string[]; confidence?: number; spam_probability?: number; hints?: string[]; file_name?: string; size?: number; sha256?: string; magic_type?: string; label?: string; id?: number };
 type Stats = { total_scans: number; threats_detected: number; by_type: Record<string, number>; recent: { id:number; scan_type:string; input_summary:string; verdict:string; risk_score:number; created_at:string }[] };
 type HistoryItem = { id:number; scan_type:ScanType; input_summary:string; verdict:string; risk_score:number; created_at:string };
-type User = { id:number; name:string; email:string };
 const names: Record<ScanType,string> = { spam:'Message check', url:'Link check', file:'File check' };
 
 async function request(path: string, init?: RequestInit) {
@@ -21,6 +21,7 @@ export default function App() {
   const [authState, setAuthState] = useState<'checking'|'signed-out'|'signed-in'>('checking');
   const [authError, setAuthError] = useState('');
   const [user, setUser] = useState<User | null>(null);
+  const [accountModalTab, setAccountModalTab] = useState<'profile' | 'password' | null>(null);
   const [page, setPage] = useState('Overview');
   const [scanner, setScanner] = useState<ScanType>('spam');
   const [text, setText] = useState('');
@@ -122,10 +123,47 @@ export default function App() {
       <div className="brand"><span className="brand-mark"><Shield size={20}/></span><span>CYBER<span className="brand-light">SHIELD</span><small>LOCAL THREAT DESK</small></span></div>
       <div className="side-label">WORKSPACE</div>
       <nav>{nav.map(item => <button key={item.label} title={item.label} aria-label={item.label} className={`nav-item ${page===item.label?'selected':''}`} onClick={()=>setPage(item.label)}><item.icon size={17}/>{item.label}{page===item.label&&<ChevronRight size={15} className="nav-chevron"/>}</button>)}</nav>
-      <div className="side-bottom"><div className="privacy"><span className="live-dot"/><div><b>Local analysis</b><small>Inputs stay on this device</small></div><ShieldCheck size={17}/></div><div className="side-version">CYBERSHIELD AI <span>v1.0</span></div></div>
+      <div className="side-bottom">
+        <div className="sidebar-account" onClick={() => setAccountModalTab('profile')} title="Manage Account Profile">
+          <div className="sidebar-user-avatar">
+            {user?.avatar ? <img src={user.avatar} alt={user.name} className="avatar-img" /> : user?.name?.slice(0,1).toUpperCase()}
+          </div>
+          <div className="sidebar-user-info">
+            <span className="sidebar-user-name">{user?.name}</span>
+            <span className="sidebar-user-email">{user?.email}</span>
+          </div>
+        </div>
+        <div className="sidebar-user-actions">
+          <button className="sidebar-action-btn" onClick={() => setAccountModalTab('profile')} title="Edit Profile" aria-label="Edit Profile">
+            <UserCog size={14} />
+            <span>Edit profile</span>
+          </button>
+          <button className="sidebar-action-btn" onClick={() => setAccountModalTab('password')} title="Change Password" aria-label="Change Password">
+            <KeyRound size={14} />
+            <span>Change password</span>
+          </button>
+          <button className="sidebar-logout-btn" onClick={() => void signOut()} title="Log out of session" aria-label="Log out">
+            <LogOut size={14} />
+            <span>Log out</span>
+          </button>
+        </div>
+        <div className="privacy"><span className="live-dot"/><div><b>Local analysis</b><small>Inputs stay on this device</small></div><ShieldCheck size={17}/></div>
+        <div className="side-version">CYBERSHIELD AI <span>v1.0</span></div>
+      </div>
     </aside>
     <main className="main">
-      <header className="topbar"><div className="crumb">SECURITY CONSOLE <span>/</span> {page.toUpperCase()}</div><div className="topbar-actions"><div className="backend-state"><span className={`live-dot ${health?.status!=='ok'?'offline':''}`}/>{health?.status==='ok'?'API connected':'Connecting to API'}</div><div className="account-chip"><span>{user?.name?.slice(0,1).toUpperCase()}</span><b>{user?.name}</b></div><button className="signout-button" onClick={()=>void signOut()} title="Sign out" aria-label="Sign out"><LogOut size={15}/></button></div></header>
+      <header className="topbar">
+        <div className="crumb">SECURITY CONSOLE <span>/</span> {page.toUpperCase()}</div>
+        <div className="topbar-actions">
+          <div className="backend-state"><span className={`live-dot ${health?.status!=='ok'?'offline':''}`}/>{health?.status==='ok'?'API connected':'Connecting to API'}</div>
+          <div className="account-chip" onClick={() => setAccountModalTab('profile')} role="button" title="Edit Profile & Password">
+            <span>{user?.avatar ? <img src={user.avatar} alt={user.name} className="avatar-img" /> : user?.name?.slice(0,1).toUpperCase()}</span>
+            <b>{user?.name}</b>
+            <UserCog size={13} className="account-chip-cog" />
+          </div>
+          <button className="signout-button" onClick={()=>void signOut()} title="Log out" aria-label="Log out"><LogOut size={14}/><span>Log out</span></button>
+        </div>
+      </header>
       <div className="content">
         {error&&<div className="error-message" role="alert"><AlertTriangle size={16}/>{error}</div>}
         {page==='Overview'&&<>
@@ -175,6 +213,17 @@ export default function App() {
       </div>
       <footer className="footer"><span>CYBERSHIELD AI <i/> LOCAL BY DESIGN</span><span>SCREENING IS NOT A GUARANTEE OF SAFETY</span></footer>
     </main>
+    {accountModalTab && user && (
+      <AccountModal
+        user={user}
+        initialTab={accountModalTab}
+        onClose={() => setAccountModalTab(null)}
+        onUserUpdated={(updatedUser) => {
+          setUser(updatedUser);
+        }}
+        apiBase={API}
+      />
+    )}
   </div>;
 }
 

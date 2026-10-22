@@ -63,6 +63,16 @@ class LoginInput(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class UpdateProfileInput(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    avatar: str | None = Field(default=None, max_length=2_000_000)
+
+
+class ChangePasswordInput(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
 def connect_db() -> sqlite3.Connection:
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
@@ -117,10 +127,16 @@ def initialize_db() -> None:
         scan_columns = {row["name"] for row in connection.execute("PRAGMA table_info(scans)")}
         if "user_id" not in scan_columns:
             connection.execute("ALTER TABLE scans ADD COLUMN user_id INTEGER REFERENCES users(id)")
+        user_columns = {row["name"] for row in connection.execute("PRAGMA table_info(users)")}
+        if "avatar" not in user_columns:
+            connection.execute("ALTER TABLE users ADD COLUMN avatar TEXT")
 
 
 def public_user(row: sqlite3.Row) -> dict:
-    return {"id": row["id"], "name": row["name"], "email": row["email"]}
+    avatar_val = None
+    if "avatar" in row.keys() and row["avatar"]:
+        avatar_val = row["avatar"]
+    return {"id": row["id"], "name": row["name"], "email": row["email"], "avatar": avatar_val}
 
 
 def issue_session(user_id: int, response: Response) -> None:
@@ -151,7 +167,7 @@ def require_user(request: Request) -> dict:
     now = datetime.now(timezone.utc).isoformat()
     with database() as connection:
         row = connection.execute(
-            "SELECT users.id, users.name, users.email FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?",
+            "SELECT users.id, users.name, users.email, users.avatar FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?",
             (token_hash, now),
         ).fetchone()
         connection.execute("DELETE FROM sessions WHERE expires_at <= ?", (now,))
@@ -307,6 +323,45 @@ def logout(request: Request, response: Response) -> dict:
             connection.execute("DELETE FROM sessions WHERE token_hash = ?", (token_hash,))
     response.delete_cookie(SESSION_COOKIE, path="/", httponly=True, samesite="lax")
     return {"logged_out": True}
+
+
+@app.post("/api/auth/profile")
+def update_profile(payload: UpdateProfileInput, user: dict = Depends(require_user)) -> dict:
+    name = payload.name.strip()
+    if len(name) < 2:
+        raise HTTPException(status_code=422, detail="Name must contain at least two characters.")
+    avatar = payload.avatar
+    if avatar and not (avatar.startswith("data:image/") or avatar.startswith("http://") or avatar.startswith("https://") or avatar.startswith("avatar:")):
+        raise HTTPException(status_code=422, detail="Invalid avatar format.")
+    with database() as connection:
+        connection.execute(
+            "UPDATE users SET name = ?, avatar = ? WHERE id = ?",
+            (name, avatar, user["id"]),
+        )
+        row = connection.execute("SELECT id, name, email, avatar FROM users WHERE id = ?", (user["id"],)).fetchone()
+    return {"user": public_user(row)}
+
+
+@app.post("/api/auth/change-password")
+def change_password(payload: ChangePasswordInput, user: dict = Depends(require_user)) -> dict:
+    with database() as connection:
+        row = connection.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="User not found.")
+    expected = bytes.fromhex(row["password_hash"])
+    actual = hash_password(payload.current_password, bytes.fromhex(row["password_salt"]))
+    if not hmac.compare_digest(expected, actual):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+    if payload.current_password == payload.new_password:
+        raise HTTPException(status_code=400, detail="New password cannot be the same as your current password.")
+    new_salt = secrets.token_bytes(16)
+    new_hash = hash_password(payload.new_password, new_salt)
+    with database() as connection:
+        connection.execute(
+            "UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?",
+            (new_hash.hex(), new_salt.hex(), user["id"]),
+        )
+    return {"success": True, "message": "Password changed successfully."}
 
 
 @app.post("/api/scan/spam")

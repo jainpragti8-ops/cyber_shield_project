@@ -98,3 +98,37 @@ def test_scan_history_is_isolated_per_account(client: TestClient) -> None:
         second_client.post("/api/auth/signup", json={"name": "Second User", "email": f"{suffix}@example.test", "password": "correct-horse-battery"})
         assert second_client.get("/api/history").json() == []
         assert second_client.get(f"/api/history/{scanned['id']}").status_code == 404
+
+
+def test_update_profile(client: TestClient) -> None:
+    resp = client.post("/api/auth/profile", json={"name": "Updated Operator", "avatar": "data:image/png;base64,iVBORw0KGgo="})
+    assert resp.status_code == 200
+    user = resp.json()["user"]
+    assert user["name"] == "Updated Operator"
+    assert user["avatar"] == "data:image/png;base64,iVBORw0KGgo="
+    me = client.get("/api/auth/me").json()["user"]
+    assert me["name"] == "Updated Operator"
+    assert me["avatar"] == "data:image/png;base64,iVBORw0KGgo="
+
+
+def test_change_password() -> None:
+    with TestClient(app) as client:
+        email = f"{uuid4().hex}@example.test"
+        signup = client.post("/api/auth/signup", json={"name": "Password User", "email": email, "password": "initial-secret-123"})
+        assert signup.status_code == 200
+
+        # Bad current password
+        bad_resp = client.post("/api/auth/change-password", json={"current_password": "wrong-secret-000", "new_password": "brand-new-secret-456"})
+        assert bad_resp.status_code == 400
+
+        # Successful password change
+        good_resp = client.post("/api/auth/change-password", json={"current_password": "initial-secret-123", "new_password": "brand-new-secret-456"})
+        assert good_resp.status_code == 200
+        assert good_resp.json()["success"] is True
+
+        # Log out and log in with new password
+        client.post("/api/auth/logout")
+        old_login = client.post("/api/auth/login", json={"email": email, "password": "initial-secret-123"})
+        assert old_login.status_code == 401
+        new_login = client.post("/api/auth/login", json={"email": email, "password": "brand-new-secret-456"})
+        assert new_login.status_code == 200
